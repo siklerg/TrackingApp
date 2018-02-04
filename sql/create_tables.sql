@@ -1,6 +1,7 @@
 drop table if exists users;
 create table if not exists users (
-	username varchar(25) primary key, 
+	user_id serial primary key,
+	username varchar(25) not null unique,
 	email varchar(100) not null, 
 	full_name varchar (100),
 	nickname varchar (25) not null,
@@ -15,20 +16,20 @@ create table if not exists roles (
 drop table if exists user_role;
 create table if not exists user_role (
 	user_role_id serial primary key,
-	username varchar (25) references users (username),
-	role_id int references roles (role_id),);
+	user_id int references users (user_id),
+	role_id int references roles (role_id));
 	
 drop table if exists kml_files;
 create table if not exists kml_files (
 	kml_file_id serial primary key,
 	filename varchar (50) not null,
-	file bytea not null,);
+	file bytea not null);
 	
 drop table if exists tracking;
 create table if not exists tracking (
 	tracking_id serial primary key,
 	kml_file_id int references kml_files (kml_file_id),
-	username varchar (25) references users (username));
+	user_id int references users (user_id));
 	
 drop table if exists pic_files;
 create table if not exists pic_files (

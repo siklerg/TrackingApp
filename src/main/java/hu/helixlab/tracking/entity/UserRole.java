@@ -66,7 +66,7 @@ public class UserRole extends BaseEntity implements Serializable {
 	}
 
 	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "username")
+	@JoinColumn(name = "user_id")
 	public Users getUsers() {
 		return this.users;
 	}

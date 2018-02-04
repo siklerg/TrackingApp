@@ -51,7 +51,7 @@ public class Regions extends BaseEntity implements Serializable {
 		this.regionName = regionName;
 	}
 
-	@OneToMany(fetch = FetchType.LAZY, mappedBy = "regions")
+	@OneToMany(fetch = FetchType.EAGER, mappedBy = "regions")
 	public Set<TrackingRegions> getTrackingRegionses() {
 		return this.trackingRegionses;
 	}

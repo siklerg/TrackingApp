@@ -12,6 +12,9 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.WorkbookUtil;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.hibernate.Transaction;
 
@@ -92,15 +95,17 @@ public class EntityService {
 
 			StringBuilder sqlBuilder = new StringBuilder();
 			sqlBuilder.append(" select e from ").append(clazz.getName()).append(" e ");
+			boolean hasParameter = false;
 			if (filter != null && filter.size() > 0) {
+				hasParameter = true;
 				sqlBuilder.append(" where 1=1 ");
 				for (Map.Entry<String, Object> entry : filter.entrySet()) {
 					sqlBuilder.append(" and e.").append(entry.getKey()).append(" = :").append(entry.getKey());
 				}
 			}
 			sqlBuilder.append(" order by id asc ");
-			Query query = ENTITY_MANAGER.createQuery(sqlBuilder.toString(), clazz);
-			if (filter != null && filter.size() > 0) {
+			Query query = ENTITY_MANAGER.createQuery(sqlBuilder.toString());
+			if (hasParameter) {
 				for (Map.Entry<String, Object> entry : filter.entrySet()) {
 					query.setParameter(entry.getKey(), entry.getValue());
 				}
@@ -183,8 +188,9 @@ public class EntityService {
 	}
 
 	public void createUserStat () {
-		String userStatSql = " select u.username, u.email, u.full_name, u.nickname, counter.count from users u left join " +
-				" (select username, count(*) from tracking group by username )counter on u.username = counter.username  ";
+		String userStatSql = " select u.username, u.email, u.full_name, u.nickname, count(*) from users u " +
+				" inner join tracking t on u.user_id = t.user_id " +
+				" group by u.username, u.email, u.full_name, u.nickname  ";
 		EntityTransaction transaction = null;
 		try {
 			// Get a transaction
@@ -195,37 +201,29 @@ public class EntityService {
 			Query query = ENTITY_MANAGER.createNativeQuery(userStatSql);
 			//https://www.thoughts-on-java.org/result-set-mapping-basics/
 			List<Object[]> result = query.getResultList();
-			Workbook wb = new XSSFWorkbook();
-			Sheet sheet = wb.createSheet("Felhasználók");
+			XSSFWorkbook wb = new XSSFWorkbook();
+			XSSFSheet sheet = wb.createSheet("Felhasználók");
 			int rowNum = 0;
-			Row r = sheet.createRow(rowNum);
-			Cell usernameCell = r.createCell(0);
+			XSSFRow r = sheet.createRow(rowNum);
+			XSSFCell usernameCell = r.createCell(0);
 			usernameCell.setCellValue("Felhasználónév");
-			Cell emailCell = r.createCell(1);
+			XSSFCell emailCell = r.createCell(1);
 			emailCell.setCellValue("E-mail cím");
-			Cell fullnameCell = r.createCell(2);
+			XSSFCell fullnameCell = r.createCell(2);
 			fullnameCell.setCellValue("Teljes név");
-			Cell nicknameCell = r.createCell(3);
+			XSSFCell nicknameCell = r.createCell(3);
 			nicknameCell.setCellValue("Becenév");
-			Cell trackCountCell = r.createCell(4);
+			XSSFCell trackCountCell = r.createCell(4);
 			trackCountCell.setCellValue("Felhasználó által létrehozott útvonalak");
-			int allColNum = 0;
 			for (Object[] row : result) {
-				Row dataRow = sheet.createRow(++rowNum);
+				XSSFRow dataRow = sheet.createRow(++rowNum);
 				int cellNum = 0;
 				for (Object o : row) {
-					Cell dataCell = dataRow.createCell(cellNum++);
+					XSSFCell dataCell = dataRow.createCell(cellNum++);
 					if (o != null) {
 						dataCell.setCellValue(o.toString());
 					}
 				}
-				if (cellNum - 1 > allColNum) {
-					allColNum = cellNum - 1;
-				}
-			}
-			//https://stackoverflow.com/questions/4611018/apache-poi-excel-how-to-configure-columns-to-be-expanded#answer-4612239
-			for (int i = 0; i <= allColNum; i++) {
-				sheet.autoSizeColumn(i);
 			}
 			Scanner scanner = new Scanner(System.in);
 			//pl a teljes név esetén csak az első szóközig olvassa be, ezért itt megadjuk, hogy mindig a sor
@@ -249,9 +247,8 @@ public class EntityService {
 	}
 
 	public void createTrackingStat () {
-		String userStatSql = " select tp.length, tp.level, tp.description, counter.count from tracking_parameters tp left join\n" +
-				"(select tracking_id, count(*) from pic_files group by tracking_id)counter " +
-				"on counter.tracking_id = tp.tracking_id order by tp.tracking_id asc  ";
+		String userStatSql = " select tp.length, tp.level, tp.description, count(*) from tracking_parameters tp " +
+				" inner join pic_files p on p.tracking_id = tp.tracking_id group by tp.length, tp.level, tp.description  ";
 		EntityTransaction transaction = null;
 		try {
 			// Get a transaction
@@ -262,35 +259,28 @@ public class EntityService {
 			Query query = ENTITY_MANAGER.createNativeQuery(userStatSql);
 			//https://www.thoughts-on-java.org/result-set-mapping-basics/
 			List<Object[]> result = query.getResultList();
-			Workbook wb = new XSSFWorkbook();
-			Sheet sheet = wb.createSheet("Útvonalak");
+			XSSFWorkbook wb = new XSSFWorkbook();
+			XSSFSheet sheet = wb.createSheet("Útvonalak");
 			int rowNum = 0;
-			Row r = sheet.createRow(rowNum);
-			Cell usernameCell = r.createCell(0);
+			XSSFRow r = sheet.createRow(rowNum);
+			XSSFCell usernameCell = r.createCell(0);
 			usernameCell.setCellValue("Hossz");
-			Cell emailCell = r.createCell(1);
+			XSSFCell emailCell = r.createCell(1);
 			emailCell.setCellValue("Szint");
-			Cell fullnameCell = r.createCell(2);
+			XSSFCell fullnameCell = r.createCell(2);
 			fullnameCell.setCellValue("Leírás");
-			Cell nicknameCell = r.createCell(3);
+			XSSFCell nicknameCell = r.createCell(3);
 			nicknameCell.setCellValue("Fényképek száma");
-			int allColNum = 0;
+
 			for (Object[] row : result) {
-				Row dataRow = sheet.createRow(++rowNum);
+				XSSFRow dataRow = sheet.createRow(++rowNum);
 				int cellNum = 0;
 				for (Object o : row) {
-					Cell dataCell = dataRow.createCell(cellNum++);
+					XSSFCell dataCell = dataRow.createCell(cellNum++);
 					if (o != null) {
 						dataCell.setCellValue(o.toString());
 					}
 				}
-				if (cellNum - 1 > allColNum) {
-					allColNum = cellNum - 1;
-				}
-			}
-			//https://stackoverflow.com/questions/4611018/apache-poi-excel-how-to-configure-columns-to-be-expanded#answer-4612239
-			for (int i = 0; i <= allColNum; i++) {
-				sheet.autoSizeColumn(i);
 			}
 			Scanner scanner = new Scanner(System.in);
 			//pl a teljes név esetén csak az első szóközig olvassa be, ezért itt megadjuk, hogy mindig a sor

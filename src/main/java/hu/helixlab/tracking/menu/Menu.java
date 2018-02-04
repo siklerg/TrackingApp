@@ -61,7 +61,12 @@ public class Menu {
 						String userName = scanner.next();
 						System.out.println("Jelszó:\n");
 						String pwd = scanner.next();
-						signedInUser = (Users)es.searchById(Users.class, userName);
+						HashMap<String, Object> filterMap = new HashMap<>();
+						filterMap.put("username", userName);
+						List<Users> users = (List<Users>)es.search(Users.class, filterMap);
+						if (users != null && users.size() > 0) {
+							signedInUser = users.get(0);
+						}
 						boolean pwdOK = false;
 						if (signedInUser != null) {
 							//Összehasonlítom a tárolt és kódolt jelszót a beírttal
@@ -95,8 +100,10 @@ public class Menu {
 						newUser.setFullName(fullName);
 						newUser.setNickname(nickName);
 						newUser.setPassword(BCrypt.hashpw(newPassword, BCrypt.gensalt()));
-						Users existed = (Users)es.searchById(Users.class, newUserName);
-						if (existed != null) {
+						HashMap<String, Object> filterMap2 = new HashMap<>();
+						filterMap2.put("username", newUserName);
+						List<Users> existeds = (List<Users>)es.search(Users.class, filterMap2);
+						if (existeds != null && existeds.size() > 0) {
 							System.out.println("A megadott felhasználónév már foglalt.");
 						} else {
 							es.save(newUser);
@@ -266,12 +273,14 @@ public class Menu {
 								File imgDir = new File(imgDirPath);
 								if (imgDir.exists() && imgDir.isDirectory()) {
 									for (File f : imgDir.listFiles()) {
-										PicFiles pf = new PicFiles();
-										pf.setTracking(t);
-										pf.setFilename(f.getName());
-										pf.setFile(Files.readAllBytes(f.toPath()));
-										es.save(pf);
-										t.getPicFileses().add(pf);
+										if (f.getName().endsWith("jpg")) {
+											PicFiles pf = new PicFiles();
+											pf.setTracking(t);
+											pf.setFilename(f.getName());
+											pf.setFile(Files.readAllBytes(f.toPath()));
+											es.save(pf);
+											t.getPicFileses().add(pf);
+										}
 									}
 								} else {
 									System.out.println("A megadott elérési út nem létezik, vagy nem mappa.");
@@ -313,21 +322,20 @@ public class Menu {
 									System.out.println("\t\t" + pf.getFilename());
 								}
 							}
-							int torolId = scanner.nextInt();
-							Tracking torol = (Tracking)es.searchById(Tracking.class, torolId);
-							for (TrackingParameters tp : torol.getTrackingParameterses()) {
+							int deleteId = scanner.nextInt();
+							Tracking delete = (Tracking)es.searchById(Tracking.class, deleteId);
+							for (TrackingParameters tp : delete.getTrackingParameterses()) {
 								es.delete(tp);
 							}
-							for (TrackingRegions tr : torol.getTrackingRegionses()) {
+							for (TrackingRegions tr : delete.getTrackingRegionses()) {
 								es.delete(tr);
 							}
-							for (PicFiles pf : torol.getPicFileses()) {
+							for (PicFiles pf : delete.getPicFileses()) {
 								es.delete(pf);
 							}
-							KmlFiles torolni = torol.getKmlFiles();
-							es.delete(torol);
-							es.delete(torolni);
-							signedInUser = (Users)es.searchById(Users.class, signedInUser.getUsername());
+							KmlFiles deleteKMLFile = delete.getKmlFiles();
+							es.delete(delete);
+							es.delete(deleteKMLFile);
 						}
 						break;
 					case 9:
@@ -355,8 +363,14 @@ public class Menu {
 									switch (adminMenuFlag) {
 										case 1:
 											System.out.println("Adja meg a törölni kívánt felhasználó nevét:\n");
-											String torol = scanner.next();
-											Users user = (Users)es.searchById(Users.class, torol);
+											String deleteUsername = scanner.next();
+											HashMap<String, Object> deleteUserFilter = new HashMap<>();
+											deleteUserFilter.put("username", deleteUsername);
+											List<Users> find = (List<Users>)es.search(Users.class, deleteUserFilter);
+											Users user = null;
+											if (find != null && find.size() > 0) {
+												user = find.get(0);
+											}
 											if (user == null) {
 												System.out.println("Nincs ilyen felhasználó.");
 											} else {

@@ -16,6 +16,7 @@ public class Users extends BaseEntity implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = -8104524297753716547L;
+	private int userId;
 	private String username;
 	private String email;
 	private String fullName;
@@ -28,7 +29,8 @@ public class Users extends BaseEntity implements Serializable {
 	public Users() {
 	}
 
-	public Users(String username, String email, String fullName, String nickname, Date lastLogin, String password, Set<UserRole> userRoles) {
+	public Users(int userId, String username, String email, String fullName, String nickname, Date lastLogin, String password, Set<UserRole> userRoles) {
+		this.userId = userId;
 		this.username = username;
 		this.email = email;
 		this.fullName = fullName;
@@ -39,6 +41,17 @@ public class Users extends BaseEntity implements Serializable {
 	}
 
 	@Id
+	@SequenceGenerator(name="users_user_id_seq", sequenceName="users_user_id_seq", allocationSize=1)
+	@GeneratedValue(strategy=GenerationType.AUTO, generator="users_user_id_seq")
+	@Column(name = "user_id", unique = true, nullable = false)
+	public int getUserId() {
+		return userId;
+	}
+
+	public void setUserId(int userId) {
+		this.userId = userId;
+	}
+
 	@Column(name = "username", unique = true, nullable = false, length = 25)
 	public String getUsername() {
 		return this.username;
